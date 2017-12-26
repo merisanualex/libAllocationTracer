@@ -1,37 +1,63 @@
 #include <new>
 // #include <iostream>
 // #include <string>
-// #include <vector>
+#include <vector>
 #include <cstdlib>
 // #include <cstdio>
-// #include <map>
+#include <map>
 
 int main()
 {
-	// auto x = new(std::nothrow) int[3];
+	auto x1 = std::malloc(sizeof(int));
+	std::free(x1);
 
-	// delete[] x;
-	auto x = calloc(5, sizeof(int));
-	(void)x;
+	auto x2 = aligned_alloc(4, sizeof(int));
+	x2 = std::realloc(x2, 2 * sizeof(int));
+	std::free(x2);
 
-	auto x2 = realloc(x, 56);
-	(void)x2;
+	auto x3 = new int(42);
+	delete x3;
 
-	free(x2);
+	auto x4 = new int[42];
+	delete[] x4;
 
-	auto x3 = aligned_alloc(4, 24);
-	(void)x3;
+	auto x5 = new(std::nothrow) int(42);
+	::operator delete(x5, std::nothrow);
 
-	// std::map<int, int> mp;
-	// mp[0] = 1;
+	auto x6 = new(std::nothrow) int[42];
+	::operator delete[](x6, std::nothrow);
+
+
+	// auto x = calloc(5, sizeof(int));
+	// (void)x;
+
+	// auto x2 = realloc(x, 56);
+	// (void)x2;
+
+	// free(x2);
+
+	// auto x3 = aligned_alloc(4, 24);
+	// (void)x3;
+
+	std::map<int, int> mp;
+	mp[0] = 1;
 	// mp[1] = 2;
 	// mp[2] = 3;
 	// mp[4] = 3;
 	// mp[5] = 1;
 
-	// std::vector<std::string> vec;
+	std::vector<int> v;
 
-	// vec.push_back("1");
+	v.push_back(1);
+
+	std::vector<std::string> vec;
+
+	vec.push_back("1");
+
+	std::map<std::vector<int>, std::string> mp2;
+
+	mp2[v] = "test";
+
 	// vec.push_back("2");
 	// vec.push_back("3");
 	// vec.push_back("4");
