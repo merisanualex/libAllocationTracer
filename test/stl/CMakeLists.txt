@@ -12,6 +12,6 @@ set(SOURCE_FILES
 
 add_executable(${EXECUTABLE_NAME} ${SOURCE_FILES})
 
-target_compile_options(${EXECUTABLE_NAME} PRIVATE -Wall -Wextra -pedantic -Werror -pedantic-errors -O3)
+target_compile_options(${EXECUTABLE_NAME} PRIVATE -Wall -Wextra -pedantic -Werror -pedantic-errors -g -O3)
 
 install(TARGETS ${EXECUTABLE_NAME} DESTINATION bin)

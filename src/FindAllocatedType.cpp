@@ -39,42 +39,40 @@ namespace liballocationtracer
 					continue;
 				}
 
-				std::printf("Looking at %s\n", demangled.get());
+				std::printf("Trying %s\n", demangled.get());
 
-				/*
-					void std::vector<std::__cxx11::basic_string<char,
-																std::char_traits<char>,
-																std::allocator<char>
-																>,
-									std::allocator<std::__cxx11::basic_string<	char,
-																				std::char_traits<char>,
-																				std::allocator<char>
-																			>
-													>
-									>::_M_realloc_insert
-				*/
-
-				// constexpr auto AllocatorLen 		= 25;
-				// constexpr auto AllocatorStr 		= "__gnu_cxx::new_allocator<";
-				// constexpr auto AllocatorEndStr 	= ">::";
-
-				constexpr auto AllocatorLen 	= 15;
-				constexpr auto AllocatorStr 	= "std::allocator<";
+				constexpr char AllocatorStr[] 	= "> >, std::allocator<";
+				constexpr auto AllocatorLen 	= sizeof(AllocatorStr) - 1;
 				constexpr auto AllocatorEndStr 	= "> >::";
 
 				auto startPtr = std::strstr(demangled.get(), AllocatorStr);
 
 				if (not startPtr) {
-					continue;
+					constexpr char FallbackAllocatorStr[] 	= "std::allocator<";
+					constexpr auto FallbackAllocatorLen 	= sizeof(FallbackAllocatorStr) - 1;
+
+					startPtr = std::strstr(demangled.get(), FallbackAllocatorStr);
+
+					if (not startPtr) {
+						continue;
+					}
+
+					startPtr += FallbackAllocatorLen;
+				} else {
+					startPtr += AllocatorLen;
 				}
 
 				auto endPtr = std::strstr(startPtr, AllocatorEndStr);
 
 				if (not endPtr) {
-					continue;
-				}
+					constexpr char FallbackAllocatorEndStr[] = "> const&";
 
-				startPtr += AllocatorLen;
+					endPtr = std::strstr(startPtr, FallbackAllocatorEndStr);
+
+					if (not endPtr) {
+						continue;
+					}
+				}
 
 				const auto bufferLen = endPtr - startPtr;
 

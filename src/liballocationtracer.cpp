@@ -204,10 +204,10 @@ inline void trace(void* const ptr)
 
 	auto allocatedType = FindAllocatedType();
 
-	std::printf("%s of %lu bytes -> %p", ContextStrings[static_cast<int>(GetContext())], realSize, ptr);
+	std::printf("%s\tof %lu\tbytes -> %p", ContextStrings[static_cast<int>(GetContext())], realSize, ptr);
 
 	if(allocatedType) {
-		std::printf(" -> type %s", allocatedType.get());
+		std::printf(" -> type\t\033[32m%s\033[39m", allocatedType.get());
 	}
 
 	std::printf("\n");
