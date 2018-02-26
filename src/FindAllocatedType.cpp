@@ -92,9 +92,7 @@ namespace liballocationtracer
 					}
 
 					pos += AllocatorLen;
-
-					// -1 because after closing bracket of allocator there's usually a space
-					allocatorsInFrame[foundAllocators++] = demangledStr.substr(pos, endPos - pos - 1);
+					allocatorsInFrame[foundAllocators++] = demangledStr.substr(pos, endPos - pos);
 					pos = demangledStr.find(AllocatorStr, pos);
 				}
 
