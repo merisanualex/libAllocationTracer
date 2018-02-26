@@ -1,17 +1,14 @@
 #include <malloc.h>
-#include <execinfo.h>
 
 #include <cstdio>
-
-#include <vector>
 #include <thread>
-#include <iostream>
-#include <memory>
 
 #include "Context.hpp"
+#include "FindAllocatedType.hpp"
 #include "Originals.hpp"
 #include "TraceGuard.hpp"
-#include "FindAllocatedType.hpp"
+
+#define DESTINATION_STDOUT
 
 namespace
 {
@@ -188,6 +185,11 @@ extern "C"
 	}
 }
 
+#ifdef DESTINATION_STDOUT
+#	include "trace_destination/stdout.hpp"
+#	undef DESTINATION_STDOUT
+#endif
+
 inline void trace(void* const ptr)
 {
 	if (not libInitialized) {
@@ -202,13 +204,9 @@ inline void trace(void* const ptr)
 		return;
 	}
 
-	auto allocatedType = FindAllocatedType();
-
-	std::printf("%s\tof %lu\tbytes -> %p", ContextStrings[static_cast<int>(GetContext())], realSize, ptr);
-
-	if(allocatedType) {
-		std::printf(" -> type\t\033[32m%s\033[39m", allocatedType.get());
-	}
-
-	std::printf("\n");
+	trace_destination::trace(	FindAllocatedType(),
+								ContextStrings[static_cast<int>(GetContext())],
+								realSize,
+								ptr,
+								std::this_thread::get_id());
 }

@@ -1,8 +1,10 @@
 #include "FindAllocatedType.hpp"
 
-#include <cstring>
-
+#include <algorithm>
+#include <array>
 #include <cxxabi.h>
+#include <memory>
+#include <string>
 
 #define UNW_LOCAL_ONLY
 #	include <libunwind.h>
@@ -10,13 +12,24 @@
 
 namespace liballocationtracer
 {
-	result_t FindAllocatedType()
+	std::string FindAllocatedType()
 	{
+		// TODO: performance benchmarks
 		unw_cursor_t cursor;
 		unw_context_t context;
 
 		unw_getcontext(&context);
 		unw_init_local(&cursor, &context);
+
+		/*
+			For extra performance we can skip parsing the first 4 frames:
+				0 - this function
+				1 - trace(void*)
+				2 - liballocationtracer::Detour<...>
+				3 - operator new/delete
+			because none of them have the necessary type information
+		*/
+		int count = 0;
 
 		while (unw_step(&cursor) > 0) {
 			unw_word_t offset;
@@ -28,61 +41,77 @@ namespace liballocationtracer
 				break;
 			}
 
+			if (count < 4) {
+				++count;
+				continue;
+			}
+
 			constexpr auto SymbolSize = 1024;
 			char symbol[SymbolSize] = {};
 
 			if (unw_get_proc_name(&cursor, symbol, SymbolSize, &offset) == 0) {
-				int status = 0;
-				auto demangled = result_t{ abi::__cxa_demangle(symbol, nullptr, nullptr, &status), std::free };
+				int status 		= 0;
+				using sptr_t 	= std::unique_ptr<char, void(*)(void*)>;
+				auto demangled 	= sptr_t{ abi::__cxa_demangle(symbol, nullptr, nullptr, &status), std::free };
 
 				if (status not_eq 0) {
 					continue;
 				}
 
-				std::printf("Trying %s\n", demangled.get());
+				std::string demangledStr = demangled.get();
 
-				constexpr char AllocatorStr[] 	= "> >, std::allocator<";
-				constexpr auto AllocatorLen 	= sizeof(AllocatorStr) - 1;
-				constexpr auto AllocatorEndStr 	= "> >::";
+				constexpr char AllocatorStr[] 		= "std::allocator<";
+				constexpr auto AllocatorLen 		= sizeof(AllocatorStr) - 1;
+				constexpr auto MaxAllocatorsInFrame = 8;
 
-				auto startPtr = std::strstr(demangled.get(), AllocatorStr);
+				int foundAllocators = 0;
+				std::array<std::string, MaxAllocatorsInFrame> allocatorsInFrame;
 
-				if (not startPtr) {
-					constexpr char FallbackAllocatorStr[] 	= "std::allocator<";
-					constexpr auto FallbackAllocatorLen 	= sizeof(FallbackAllocatorStr) - 1;
+				auto pos = demangledStr.find(AllocatorStr);
 
-					startPtr = std::strstr(demangled.get(), FallbackAllocatorStr);
+				while (	pos not_eq std::string::npos and
+						foundAllocators < MaxAllocatorsInFrame) {
+					// starting from 1 because we're already in std::allocator<
+					auto openAngleBrackets 	= 1;
+					auto endPos 			= pos + AllocatorLen;
 
-					if (not startPtr) {
-						continue;
+					while (openAngleBrackets not_eq 0) {
+						const auto& ch = demangledStr[endPos];
+
+						if (ch == '>') {
+							--openAngleBrackets;
+
+							if (openAngleBrackets == 0) {
+								break;
+							}
+						} else if (ch == '<') {
+							++openAngleBrackets;
+						}
+
+						++endPos;
 					}
 
-					startPtr += FallbackAllocatorLen;
-				} else {
-					startPtr += AllocatorLen;
+					pos += AllocatorLen;
+
+					// -1 because after closing bracket of allocator there's usually a space
+					allocatorsInFrame[foundAllocators++] = demangledStr.substr(pos, endPos - pos - 1);
+					pos = demangledStr.find(AllocatorStr, pos);
 				}
 
-				auto endPtr = std::strstr(startPtr, AllocatorEndStr);
-
-				if (not endPtr) {
-					constexpr char FallbackAllocatorEndStr[] = "> const&";
-
-					endPtr = std::strstr(startPtr, FallbackAllocatorEndStr);
-
-					if (not endPtr) {
-						continue;
-					}
+				if (foundAllocators == 0) {
+					continue;
 				}
 
-				const auto bufferLen = endPtr - startPtr;
-
-				auto buffer = result_t{ static_cast<char*>(std::calloc(bufferLen, sizeof(char))), std::free };
-				std::strncpy(buffer.get(), startPtr, bufferLen);
-
-				return buffer;
+				// longest allocator is most likely the one we want
+				return *std::max_element(	allocatorsInFrame.cbegin(),
+											allocatorsInFrame.cend(),
+											[](const auto& left, const auto& right)
+											{
+												return left.length() < right.length();
+											});
 			}
 		}
 
-		return {nullptr, nullptr};
+		return {};
 	}
 }

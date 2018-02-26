@@ -1,10 +1,8 @@
 #pragma once
 
-#include <memory>
+#include <string>
 
 namespace liballocationtracer
 {
-	using result_t = std::unique_ptr<char, void(*)(void*)>;
-
-	result_t FindAllocatedType();
+	std::string FindAllocatedType();
 }

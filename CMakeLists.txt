@@ -14,7 +14,8 @@ set(SOURCE_FILES
 	src/Originals.cpp
 	src/Context.cpp
 	src/TraceGuard.cpp
-	src/FindAllocatedType.cpp)
+	src/FindAllocatedType.cpp
+	src/trace_destination/stdout.cpp)
 
 add_library(${EXECUTABLE_NAME} SHARED ${SOURCE_FILES})
 

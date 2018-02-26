@@ -4,11 +4,11 @@
 #include <unordered_map>
 
 #define ENABLE_STRING
-// #define ENABLE_WSTRING
-// #define ENABLE_VECTOR
-// #define ENABLE_MAP
-// #define ENABLE_UNORDERED_MAP
-// #define ENABLE_OTHER
+#define ENABLE_WSTRING
+#define ENABLE_VECTOR
+#define ENABLE_MAP
+#define ENABLE_UNORDERED_MAP
+#define ENABLE_OTHER
 
 int main()
 {
@@ -59,6 +59,13 @@ int main()
 		mp1[1] = 1;
 		mp1[2] = 2;
 	}
+
+	std::map<int, std::string> mp2;
+	{
+		mp2[0] = "0";
+		mp2[1] = "1";
+		mp2[2] = "2";
+	}
 #endif
 
 #ifdef ENABLE_UNORDERED_MAP
@@ -66,16 +73,21 @@ int main()
 	ump1[0] = 0;
 	ump1[1] = 1;
 	ump1[2] = 2;
+
+	std::unordered_map<int, std::string> ump2;
+	ump2[0] = "0";
+	ump2[1] = "1";
+	ump2[2] = "2";
 #endif
 
 #ifdef ENABLE_OTHER
-	std::vector<std::vector<std::string>> vec1;
-	std::vector<std::string> vec2;
-	vec2.emplace_back("1");
+	std::vector<std::vector<std::string>> vec4;
+	std::vector<std::string> vec5;
+	vec5.emplace_back("1");
 
-	vec1.push_back(vec2);
+	vec4.push_back(vec5);
 
-	std::vector<std::vector<std::vector<std::string>>> vec3;
-	vec3.push_back(vec1);
+	std::vector<std::vector<std::vector<std::string>>> vec6;
+	vec6.push_back(vec4);
 #endif
 }
